@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable View</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    
+    <style>
+        @font-face {
+        font-family: 'PromptLight';
+        src: url('/Prompt-Light.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }   
+    * {
+        font-family: 'PromptLight', 'Sarabun', sans-serif !important;
+    }
+        /* --- (CSS เดิมทั้งหมด - คงไว้เหมือนเดิม) --- */
+        body { font-family: 'MyCustomPrompt', 'Segoe UI', 'Sarabun', sans-serif; background-color: #f4f6f8; margin: 0; padding: 0; }
+        .header-wrapper { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 30px 20px 70px 20px; color: white; width: 100%; box-sizing: border-box; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .header-content { max-width: 1400px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        .app-brand { display: flex; align-items: center; gap: 15px; }
+        .app-icon { font-size: 32px; background: rgba(255,255,255,0.2); width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border-radius: 12px; backdrop-filter: blur(5px); }
+        .header-content h1 { margin: 0; font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+        .user-panel { display: flex; align-items: center; gap: 15px; }
+        .logout-btn { background: rgba(255, 255, 255, 0.2); color: white; text-decoration: none; font-weight: 600; font-size: 13px; padding: 8px 20px; border-radius: 30px; transition: all 0.3s; border: 1px solid rgba(255,255,255,0.3); }
+        .logout-btn:hover { background: rgba(255, 255, 255, 0.4); }
+        .btn-header-upload { background: white; color: #1e3c72; border: none; font-weight: 700; font-size: 13px; padding: 8px 20px; border-radius: 30px; cursor: pointer; display: flex; align-items: center; gap: 5px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); transition: transform 0.2s; }
+        .btn-header-upload:hover { transform: translateY(-2px); box-shadow: 0 6px 15px rgba(0,0,0,0.2); }
+        .controls-wrapper { max-width: 1400px; margin: -35px auto 40px auto; padding: 0 20px; position: relative; z-index: 90; }
+        .controls-bar { background: white; padding: 10px 30px; border-radius: 100px; display: flex; justify-content: center; align-items: center; gap: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.05); flex-wrap: wrap; }
+        .control-group { display: flex; align-items: center; gap: 10px; }
+        .control-group label { font-weight: 700; color: #555; font-size: 14px; white-space: nowrap; }
+        select { padding: 8px 15px; border-radius: 50px; border: 1px solid #ddd; min-width: 200px; font-size: 14px; background-color: #f9f9f9; cursor: pointer; transition: all 0.2s; }
+        select:focus { outline: none; border-color: #2a5298; box-shadow: 0 0 0 4px rgba(42, 82, 152, 0.1); }
+        .action-group { display: flex; gap: 10px; padding-left: 30px; border-left: 1px solid #eee; }
+        .btn-action { border: none; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: transform 0.2s, box-shadow 0.2s; color: white; }
+        .btn-action:hover { transform: translateY(-2px); box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .btn-csv { background-color: #ff9800; }
+        .btn-excel { background-color: #2e7d32; }
+        .btn-pdf { background-color: #d32f2f; }
+        .btn-generate { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 10px 30px; border-radius: 50px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4); transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn-generate:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6); }
+        .btn-cancel { background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%); color: white; border: none; padding: 10px 30px; border-radius: 50px; font-weight: bold; font-size: 16px; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4); transition: all 0.3s; display: flex; align-items: center; gap: 8px; }
+        .btn-cancel:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6); }
+        .main-content { max-width: 1400px; margin: 0 auto; padding: 0 20px 50px 20px; box-sizing: border-box; }
+        .schedule-block { 
+            margin-bottom: 60px; 
+            border-bottom: 2px dashed #ddd; 
+            padding-bottom: 40px; 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            zoom: 75%;  
+        }
+        .schedule-block:last-child { border-bottom: none; }
+        .block-title { color: #2c3e50; margin-bottom: 15px; border-left: 5px solid #4a90e2; padding-left: 10px; font-size: 1.5em; }
+        .table-responsive { overflow-x: auto; border-radius: 8px; border: 1px solid #e0e0e0; margin-bottom: 20px; background: #fff; padding-bottom: 20px; }
+        table.main-table { width: 100%; border-collapse: collapse; min-width: 1200px; table-layout: fixed; margin-bottom: 30px; }
+        .main-table th { background-color: #4a90e2; color: white; padding: 10px; text-align: center; border-right: 1px solid rgba(255,255,255,0.2); vertical-align: middle; }
+        .time-label { display: block; font-size: 11px; opacity: 0.9; margin-top: 4px; font-weight: normal; }
+        .main-table td { border: 1px solid #eee; padding: 0; vertical-align: top; height: 100px; }
+        .day-cell { background-color: #f8f9fa; font-weight: bold; color: #444; display: flex; align-items: center; justify-content: center; height: 100px; padding: 0; border-bottom: 1px solid #eee; }
+        .slot-filled {
+            background-color: #e1f5fe !important;  
+            border: 1px solid #b3e5fc !important;  
+            padding: 0;
+        }
+        .class-card { 
+            background: transparent; 
+            border: none;            
+            border-radius: 0px; 
+            padding: 5px;
+            height: 100%; 
+            width: 100%; 
+            box-sizing: border-box; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+            align-items: center;     
+            gap: 5px;
+            transition: transform 0.2s; 
+        }
+        .subject-code { font-weight: 700; color: #01579b; font-size: 1.2em; text-align: center; margin-bottom: 5px; } 
+        .meta-info { display: flex; flex-direction: column; gap: 3px; justify-content: center; align-items: center; margin-top: 0; padding-bottom: 5px; }
+        .badge { padding: 0; background: transparent; border: none; box-shadow: none; font-size: 10px; font-weight: 600; white-space: nowrap; display: inline-block; }
+        .badge-teacher { color: #1565c0; }
+        .badge-room { color: #c2185b; }
+        .badge-group { color: #2e7d32; }
+        .lunch-break { background: #fcfcfc; color: #aaa; display: flex; align-items: center; justify-content: center; height: 100%; font-style: italic; font-size: 12px; margin: 0 auto; text-align: center; }
+        .empty-slot { background: #fafafa; }
+        .summary-section { width: 100%; min-width: 1200px; box-sizing: border-box; }
+        h3.summary-header { margin: 0 0 15px 0; color: #4a90e2; font-size: 1.3em; border-bottom: 2px solid #eef2f5; padding-bottom: 8px; }
+        .summary-container { display: flex; gap: 20px; width: 100%; }
+        .summary-box { flex: 1 1 0; width: 0; border-radius: 12px; overflow: hidden; border: 1px solid #dcdcdc; box-shadow: 0 2px 8px rgba(0,0,0,0.05); background-color: white; }
+        .summary-table { width: 100%; border-collapse: collapse; font-size: 14px; table-layout: fixed; }
+        .summary-table th { background-color: #4a90e2; color: white; padding: 10px; text-align: center; font-weight: 600; border: 1px solid #357abd; }
+        .summary-table td { border: 1px solid #eee; padding: 8px 10px; text-align: center; vertical-align: middle; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .summary-table tr:nth-child(even) { background-color: #f8f9fa; }
+        .summary-table th:nth-child(1) { width: 40px; }
+        .summary-table th:nth-child(2) { width: 100px; }
+        .summary-table th:nth-child(3) { width: auto; }
+        .summary-table th:nth-child(4), .summary-table th:nth-child(5), .summary-table th:nth-child(6), .summary-table th:nth-child(7) { width: 35px; }
+        .col-name { text-align: left !important; }
+        .signature-section { display: none; }
+        .welcome-message { text-align: center; margin-top: 100px; color: #888; }
+        .welcome-icon { font-size: 80px; margin-bottom: 20px; display: block; opacity: 0.5; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); backdrop-filter: blur(5px); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 30px; border: 1px solid #888; width: 90%; max-width: 500px; border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: slideIn 0.3s; }
+        @keyframes slideIn { from {transform: translateY(-50px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        .upload-form-group { margin-bottom: 20px; }
+        .upload-form-group label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        .upload-form-group select, .upload-form-group input { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; }
+        .btn-submit-upload { width: 100%; background: #4a90e2; color: white; padding: 12px; border: none; border-radius: 50px; font-weight: bold; cursor: pointer; font-size: 16px; transition: background 0.2s; }
+        .btn-submit-upload:hover { background: #357abd; }
+
+        /* === [เพิ่มส่วน Sidebar] === */
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 2000;
+            top: 0;
+            left: 0;
+            background-color: #1e3c72;
+            overflow-x: hidden;
+            transition: 0.4s;
+            padding-top: 60px;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+        }
+        .sidebar a {
+            padding: 15px 25px;
+            text-decoration: none;
+            font-size: 18px;
+            color: #ecf0f1;
+            display: block;
+            transition: 0.3s;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .sidebar a:hover {
+            background-color: #2a5298;
+            color: #fff;
+            padding-left: 35px;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 15px;
+            font-size: 36px;
+            margin-right: 50px;
+            border-bottom: none;
+        }
+        .menu-icon {
+            font-size: 24px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .menu-icon:hover { background: rgba(255,255,255,0.4); }
+
+        @media print {
+            @page { size: A4 landscape; margin: 5mm; }
+            .header-wrapper, .controls-wrapper, .no-print, .logout-btn, .btn-header-upload, .sidebar, .menu-icon { display: none !important; }
+            body { background-color: white !important; color: black !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; zoom: 65%; padding: 0 !important; margin: 0 !important; }
+            .main-content { padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: 100% !important; }
+            .schedule-block { page-break-inside: avoid; break-inside: avoid; border: none !important; box-shadow: none !important; padding: 0 !important; margin-bottom: 0 !important; width: 100% !important; display: flex !important; flex-direction: column !important; }
+            .block-title { order: 1 !important; color: #000 !important; }
+            .table-responsive { display: flex !important; flex-direction: column !important; border: none !important; overflow: visible !important; width: 100% !important; min-width: 0 !important; order: 3 !important; }
+            .summary-section { order: 1 !important; padding-bottom: 20px !important; border: none !important; }
+            .advisor-section {
+                order: 2 !important;
+                color: #000 !important; 
+                margin-bottom: 10px !important;
+                padding-left: 0 !important; 
+            }
+            table.main-table { order: 2 !important; width: 100% !important; min-width: 0 !important; border-collapse: collapse !important; margin-bottom: 0 !important; }
+            .signature-section { display: flex !important; justify-content: space-around; margin-top: 30px; order: 4 !important; width: 100%; }
+            .sign-box { text-align: center; color: #000; }
+            .sign-box p { margin: 10px 0; }
+            .summary-box {
+                border-radius: 0 !important;  
+                overflow: visible !important;   
+                border: 0px solid #000 !important; 
+            }
+            .summary-table { border-radius: 0 !important; }
+            table { width: 100% !important; border-collapse: collapse !important; border: 2px solid #000 !important; }
+            th, td, .main-table th, .main-table td, .summary-table th, .summary-table td { border: 1px solid #000 !important; color: #000 !important; background-color: #fff !important; }
+            .day-cell {
+                display: table-cell !important;  
+                vertical-align: middle !important; 
+                text-align: center !important;     
+                border: 1px solid #000 !important; 
+            }
+            .class-card { border: none !important; background: transparent !important; }
+            .subject-code, .badge, .lunch-break, .time-label, .block-title, h3.summary-header { color: #000 !important; text-shadow: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <% if (user.role === 'admin') { %>
+    <div id="adminSidebar" class="sidebar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeSidebar()">&times;</a>
+        <a href="/timetable">📅 ตารางสอน</a>
+        <a href="/management" onclick="openModal()">⚙️ การจัดการ</a>
+        <a href="/logout" style="color: #ff4b2b;">🚪 Logout</a>
+    </div>
+    <% } %>
+
+    <header class="header-wrapper">
+        <div class="header-content">
+            <div class="app-brand">
+                <div class="app-icon">📅</div>
+                <h1>ระบบตารางสอนอัตโนมัติ</h1>
+            </div>
+            <div class="user-panel">
+                <span style="margin-right: 15px;">
+                    <% if (user.role === 'admin') { %> Admin <% } else if (user.role === 'teacher') { %> ครู <% } else { %> นักเรียน <% } %>: 
+                    <strong><%= user.username %></strong>
+                </span>
+                
+                <% if (user.role === 'admin') { %>
+                    <div class="menu-icon" onclick="openSidebar()">☰ เมนู</div>
+                <% } else { %>
+                    <a href="/logout" class="logout-btn">Logout</a>
+                <% } %>
+            </div>
+        </div>
+    </header>
+
+    <div class="controls-wrapper">
+        <div class="controls-bar">
+            <% if (user.role === 'admin') { %>
+                <form action="/admin/toggle-timetable" method="POST" style="margin: 0;">
+                    <% if (!isTimetableActive) { %>
+                        <input type="hidden" name="status" value="1">
+                        <button type="submit" class="btn-generate">✨ จัดตารางสอน</button>
+                    <% } else { %>
+                        <input type="hidden" name="status" value="0">
+                        <button type="submit" class="btn-cancel">❌ ยกเลิกตาราง</button>
+                    <% } %>
+                </form>
+            <% } %>
+
+            <% if (isTimetableActive) { %>
+                
+                <% if (user.role === 'admin') { %>
+                    <div style="width: 1px; height: 30px; background: #eee; margin: 0 10px;"></div>
+                    <div class="control-group">
+                        <label>1. มุมมอง</label>
+                        <select id="viewTypeSelect" onchange="changeViewType()">
+                            <option value="group" <%= viewType === 'group' ? 'selected' : '' %>>กลุ่มเรียน</option>
+                            <option value="teacher" <%= viewType === 'teacher' ? 'selected' : '' %>>ครูผู้สอน</option>
+                            <option value="room" <%= viewType === 'room' ? 'selected' : '' %>>ห้องเรียน</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label>2. รายการ</label>
+                        <select id="itemIdSelect" onchange="applyFilter()"></select>
+                    </div>
+                <% } %>
+
+                <div class="action-group">
+                    <button class="btn-action btn-csv" onclick="downloadCSV()">📄 CSV</button>
+                    <button class="btn-action btn-excel" onclick="downloadExcel()">📊 Excel</button>
+                    <button class="btn-action btn-pdf" onclick="window.print()">🖨️ PDF</button>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <% if (user.role === 'admin') { %>
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2 style="margin-top:0; color:#1e3c72;">📂 อัปโหลดไฟล์ CSV</h2>
+            <form action="/upload-csv" method="POST" enctype="multipart/form-data">
+                <div class="upload-form-group">
+                    <label>เลือกประเภทข้อมูลที่ต้องการอัปเดต:</label>
+                    <select name="targetFilename" required>
+                        <option value="subject.csv">📚 รายวิชา (subject.csv)</option>
+                        <option value="teacher.csv">👨‍🏫 ครูผู้สอน (teacher.csv)</option>
+                        <option value="room.csv">🏫 ห้องเรียน (room.csv)</option>
+                        <option value="student_group.csv">👥 กลุ่มเรียน (student_group.csv)</option>
+                        <option value="timeslot.csv">⏰ คาบเรียน (timeslot.csv)</option>
+                        <option value="output.csv">📅 ผลลัพธ์ตาราง (output.csv)</option>
+                    </select>
+                </div>
+                <div class="upload-form-group">
+                    <label>เลือกไฟล์ CSV จากเครื่อง:</label>
+                    <input type="file" name="csvFile" accept=".csv" required>
+                </div>
+                <button type="submit" class="btn-submit-upload">🚀 อัปโหลดและบันทึก</button>
+            </form>
+        </div>
+    </div>
+    <% } %>
+
+    <main class="main-content">
+        <% if (!isTimetableActive) { %>
+            <div class="welcome-message">
+                <span class="welcome-icon">📅</span>
+                <% if (user.role === 'admin') { %>
+                    <h2>ระบบพร้อมทำงาน</h2>
+                    <p>กรุณากดปุ่ม <strong>"✨ จัดตารางสอน"</strong> ด้านบนเพื่อเปิดใช้งานตารางเรียน</p>
+                <% } else { %>
+                    <h2>ระบบยังไม่เปิดใช้งานตารางเรียน</h2>
+                    <p>กรุณารอเจ้าหน้าที่จัดตารางสอนดำเนินการ</p>
+                <% } %>
+            </div>
+        <% } else { %>
+            
+            <% 
+                const itemKeys = Object.keys(scheduleData).sort();
+                if (itemKeys.length === 0) {
+            %>
+                <div style="text-align: center; padding: 50px; color: #666; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08);">
+                    <% if (user.role === 'admin') { %>
+                        ไม่พบข้อมูลตารางเรียน (กรุณากดปุ่มจัดตาราง หรือ อัปโหลดไฟล์ output.csv)
+                    <% } else { %>
+                        ไม่พบข้อมูลตารางเรียนสำหรับบัญชีนี้
+                    <% } %>
+                </div>
+            <%  } %>
+
+            <% itemKeys.forEach(itemId => { 
+                const schedule = scheduleData[itemId];
+                const itemName = nameMap[itemId] || itemId;
+            %>
+                <div class="schedule-block">
+                    <h2 class="block-title"><%= itemName %></h2>
+
+                    <% if (viewType === 'group') { %>
+                        <div class="advisor-section" style="padding-left: 15px; margin-bottom: 20px; font-size: 1.6em; color: #444;">
+                            <strong>ครูที่ปรึกษา :</strong> <%= (typeof advisorMap !== 'undefined' && advisorMap[itemId]) ? advisorMap[itemId] : '-' %>
+                        </div>
+                    <% } %>
+                    <div class="table-responsive" id="table-<%= itemId %>">
+                        <table class="main-table">
+                            <thead>
+                                <tr>
+                                    <th>วัน/เวลา</th>
+                                    <% for(let i=1; i<=12; i++) { %>
+                                        <th><%= i %><span class="time-label"><%= periodTimeMap[i] || '' %></span></th>
+                                    <% } %>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri']; %>
+                                <% const dayNames = { Mon: 'จันทร์', Tue: 'อังคาร', Wed: 'พุธ', Thu: 'พฤหัส', Fri: 'ศุกร์' }; %>
+                                <% days.forEach(day => { %>
+                                    <tr>
+                                        <td class="day-cell"><%= dayNames[day] %></td>
+                                        <% for(let p=1; p<=12; p++) { 
+                                            if (p === 5) { %>
+                                                <td class="empty-slot"><div class="lunch-break">พักเที่ยง</div></td>
+                                            <% } else if (schedule[day] && schedule[day][p]) {
+                                                const currentSlot = schedule[day][p];
+                                                let colspan = 1;
+                                                for (let nextP = p + 1; nextP <= 12; nextP++) {
+                                                    if (nextP === 5) break; 
+                                                    const nextSlot = schedule[day][nextP];
+                                                    if (nextSlot && 
+                                                        nextSlot.subject_id === currentSlot.subject_id &&
+                                                        nextSlot.teacher_name === currentSlot.teacher_name &&
+                                                        nextSlot.room_name === currentSlot.room_name &&
+                                                        nextSlot.group_name === currentSlot.group_name) {
+                                                        colspan++;
+                                                    } else { break; }
+                                                }
+                                            %>
+                                                <td colspan="<%= colspan %>" class="slot-filled">
+                                                    <div class="class-card">
+                                                        <div><div class="subject-code"><%= currentSlot.subject_id %></div></div>
+                                                        <div class="meta-info">
+                                                            <% if (viewType === 'group') { %>
+                                                                <div><span class="badge badge-teacher"><%= currentSlot.teacher_name %></span></div>
+                                                                <div><span class="badge badge-room"><%= currentSlot.room_name %></span></div>
+                                                            <% } else if (viewType === 'teacher') { %>
+                                                                <div><span class="badge badge-group"><%= currentSlot.group_name %></span></div>
+                                                                <div><span class="badge badge-room"><%= currentSlot.room_name %></span></div>
+                                                            <% } else if (viewType === 'room') { %>
+                                                                <div><span class="badge badge-teacher"><%= currentSlot.teacher_name %></span></div>
+                                                                <div><span class="badge badge-group"><%= currentSlot.group_name %></span></div>
+                                                            <% } %>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            <% p += (colspan - 1); } else { %>
+                                                <td class="empty-slot"></td>
+                                            <% } } %>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+
+                        <div class="summary-section">
+                            <div class="summary-container">
+                                <% 
+                                    const subjectCounts = {};
+                                    Object.values(schedule).forEach(daySlots => {
+                                        Object.values(daySlots).forEach(slot => {
+                                            const sid = slot.subject_id;
+                                            subjectCounts[sid] = (subjectCounts[sid] || 0) + 1;
+                                        });
+                                    });
+                                    const sortedSubIds = Object.keys(subjectCounts).sort();
+                                    const mid = Math.ceil(sortedSubIds.length / 2);
+                                    const leftCol = sortedSubIds.slice(0, mid);
+                                    const rightCol = sortedSubIds.slice(mid);
+
+                                    let leftSumT = 0, leftSumP = 0, leftSumC = 0, leftSumTotal = 0;
+                                    let rightSumT = 0, rightSumP = 0, rightSumC = 0, rightSumTotal = 0;
+                                %>
+                                
+                                <div class="summary-box">
+                                    <table class="summary-table">
+                                        <thead>
+                                            <tr><th>#</th><th>รหัสวิชา</th><th class="col-name">ชื่อวิชา</th><th>ท</th><th>ป</th><th>น</th><th>รวม</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <% leftCol.forEach((subId, index) => { 
+                                                const info = subjectDetailsMap[subId] || { name: '-', theory: 0, practice: 0, credit: 0 };
+                                                let t, p, total;
+                                                if (viewType === 'group') {
+                                                    t = parseInt(info.theory) || 0; p = parseInt(info.practice) || 0; total = t + p;
+                                                } else {
+                                                    total = subjectCounts[subId] || 0;
+                                                    const staticT = parseInt(info.theory) || 0; const staticP = parseInt(info.practice) || 0; const staticTotal = staticT + staticP;
+                                                    if (staticTotal > 0) { t = Math.round((staticT / staticTotal) * total); p = total - t; } else { t = total; p = 0; }
+                                                }
+                                                leftSumT += t; leftSumP += p; leftSumC += (parseFloat(info.credit) || 0); leftSumTotal += total;
+                                            %>
+                                            <tr>
+                                                <td><%= index + 1 %></td>
+                                                <td><strong><%= subId %></strong></td>
+                                                <td class="col-name"><%= info.name %></td>
+                                                <td><%= t %></td><td><%= p %></td><td><%= info.credit %></td>
+                                                <td><strong><%= total %></strong></td>
+                                            </tr>
+                                            <% }); %>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background-color: #f1f3f5; font-weight: bold; border-top: 2px solid #dee2e6;">
+                                                <td colspan="3" style="text-align: right; padding-right: 15px;">รวมย่อย</td>
+                                                <td><%= leftSumT %></td><td><%= leftSumP %></td><td><%= leftSumC %></td><td><%= leftSumTotal %></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <div class="summary-box">
+                                    <table class="summary-table">
+                                        <thead>
+                                            <tr><th>#</th><th>รหัสวิชา</th><th class="col-name">ชื่อวิชา</th><th>ท</th><th>ป</th><th>น</th><th>รวม</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            <% rightCol.forEach((subId, index) => { 
+                                                const info = subjectDetailsMap[subId] || { name: '-', theory: 0, practice: 0, credit: 0 };
+                                                let t, p, total;
+                                                if (viewType === 'group') {
+                                                    t = parseInt(info.theory) || 0; p = parseInt(info.practice) || 0; total = t + p;
+                                                } else {
+                                                    total = subjectCounts[subId] || 0;
+                                                    const staticT = parseInt(info.theory) || 0; const staticP = parseInt(info.practice) || 0; const staticTotal = staticT + staticP;
+                                                    if (staticTotal > 0) { t = Math.round((staticT / staticTotal) * total); p = total - t; } else { t = total; p = 0; }
+                                                }
+                                                rightSumT += t; rightSumP += p; rightSumC += (parseFloat(info.credit) || 0); rightSumTotal += total;
+                                            %>
+                                            <tr>
+                                                <td><%= index + 1 + leftCol.length %></td>
+                                                <td><strong><%= subId %></strong></td>
+                                                <td class="col-name"><%= info.name %></td>
+                                                <td><%= t %></td><td><%= p %></td><td><%= info.credit %></td>
+                                                <td><strong><%= total %></strong></td>
+                                            </tr>
+                                            <% }); %>
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background-color: #f1f3f5; font-weight: bold; border-top: 2px solid #dee2e6;">
+                                                <td colspan="3" style="text-align: right; padding-right: 15px;">รวมย่อย</td>
+                                                <td><%= rightSumT %></td><td><%= rightSumP %></td><td><%= rightSumC %></td><td><%= rightSumTotal %></td>
+                                            </tr>
+                                            <tr style="background-color: #f1f3f5; font-weight: bold; border-top: 2px solid #dee2e6;">
+                                                <td colspan="3" style="text-align: right; padding-right: 15px;">รวมทั้งหมด</td>
+                                                <td><%= leftSumT + rightSumT %></td>
+                                                <td><%= leftSumP + rightSumP %></td>
+                                                <td><%= leftSumC + rightSumC %></td>
+                                                <td><%= leftSumTotal + rightSumTotal %></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div> 
+                    </div> 
+
+                    <div class="signature-section">
+                        <div class="sign-box"><p>ลงชื่อ ........................................................</p><p>(........................................................)</p><p>ผู้จัดทำตารางสอน</p></div>
+                        <div class="sign-box"><p>ลงชื่อ ........................................................</p><p>(........................................................)</p><p>หัวหน้ากลุ่มบริหารวิชาการ</p></div>
+                        <div class="sign-box"><p>ลงชื่อ ........................................................</p><p>(........................................................)</p><p>ผู้อำนวยการโรงเรียน</p></div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } %>
+    </main>
+
+    <script>
+        /* === [JS สำหรับ Sidebar] === */
+        function openSidebar() {
+            document.getElementById("adminSidebar").style.width = "250px";
+        }
+        function closeSidebar() {
+            document.getElementById("adminSidebar").style.width = "0";
+        }
+
+        const allLists = <%- JSON.stringify(dropdownLists) %>;
+        const currentViewType = "<%= viewType %>";
+        const currentSelectedId = "<%= selectedId %>";
+        const isAdmin = <%= user.role === 'admin' %>; 
+        
+        const viewSelect = document.getElementById('viewTypeSelect');
+        const itemSelect = document.getElementById('itemIdSelect');
+
+        function populateItems(type, selectedId) {
+            if(!itemSelect) return;
+            itemSelect.innerHTML = '';
+            const list = allLists[type] || [];
+            const allOption = document.createElement('option');
+            allOption.value = 'all';
+            allOption.textContent = '--- แสดงทั้งหมด ---';
+            allOption.style.fontWeight = 'bold';
+            if (selectedId === 'all') allOption.selected = true;
+            itemSelect.appendChild(allOption);
+            list.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                option.textContent = item.name;
+                if (item.id === selectedId) option.selected = true;
+                itemSelect.appendChild(option);
+            });
+        }
+        function changeViewType() { populateItems(viewSelect.value, 'all'); applyFilter(); }
+        function applyFilter() { 
+            const type = viewSelect.value; 
+            const id = itemSelect.value; 
+            if (id) window.location.href = `/timetable?type=${type}&id=${id}`; 
+        }
+
+        if (isAdmin && viewSelect && itemSelect) {
+            populateItems(currentViewType, currentSelectedId);
+        }
+
+        function downloadCSV() { window.location.href = '/download-csv'; }
+        function downloadExcel() {
+            const wb = XLSX.utils.book_new();
+            const tables = document.querySelectorAll('table');
+            if(tables.length === 0) { alert('ไม่มีข้อมูลตารางให้ดาวน์โหลด'); return; }
+            tables.forEach((table, i) => { const ws = XLSX.utils.table_to_sheet(table); XLSX.utils.book_append_sheet(wb, ws, `Table_${i+1}`); });
+            XLSX.writeFile(wb, 'timetable.xlsx');
+        }
+
+        const modal = document.getElementById("uploadModal");
+        function openModal() { 
+            if(modal) {
+                modal.style.display = "block";
+                closeSidebar(); // ปิด sidebar เมื่อเปิด modal
+            } 
+        }
+        function closeModal() { if(modal) modal.style.display = "none"; }
+        window.onclick = function(event) { if (event.target == modal) { closeModal(); } }
+    </script>
+</body>
+</html>

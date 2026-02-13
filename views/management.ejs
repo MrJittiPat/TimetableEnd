@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจัดการข้อมูล</title>
+    <style>
+        @font-face { font-family: 'PromptLight'; src: url('/Prompt-Light.ttf') format('truetype'); }   
+        * { font-family: 'PromptLight', 'Sarabun', sans-serif !important; box-sizing: border-box; }
+        body { background-color: #f4f6f8; margin: 0; padding: 0; color: #333; }
+
+        .header-wrapper { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); padding: 20px 40px; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; justify-content: space-between; align-items: center; }
+        .app-brand { font-size: 24px; font-weight: bold; display: flex; align-items: center; gap: 15px; }
+        .user-panel a { color: white; text-decoration: none; background: rgba(255,255,255,0.2); padding: 8px 20px; border-radius: 30px; font-size: 14px; transition: 0.3s; }
+        .user-panel a:hover { background: rgba(255,255,255,0.4); }
+
+        .container { max-width: 900px; margin: 50px auto; padding: 0 20px; padding-bottom: 50px; }
+        
+        .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .menu-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center; transition: transform 0.2s; cursor: pointer; text-decoration: none; color: #333; border: 1px solid #eee; }
+        .menu-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); border-color: #2a5298; }
+        .menu-icon { font-size: 40px; margin-bottom: 15px; display: block; }
+        .menu-title { font-size: 18px; font-weight: bold; color: #1e3c72; }
+
+        .section-card { background: white; padding: 30px; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        h2 { margin-top: 0; color: #1e3c72; border-bottom: 2px solid #f0f0f0; padding-bottom: 15px; margin-bottom: 20px; }
+
+        .file-status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; margin-top: 20px; }
+        .file-card { 
+            display: flex; align-items: center; justify-content: space-between; 
+            gap: 10px; padding: 12px 15px; border-radius: 10px; border: 1px solid #eee; background: #fafafa; 
+        }
+        .file-card.found { background-color: #f0fff4; border-color: #c3e6cb; color: #155724; }
+        .file-card.missing { background-color: #fff5f5; border-color: #f5c6cb; color: #721c24; opacity: 0.8; }
+        
+        .file-info { display: flex; align-items: center; gap: 10px; }
+        .file-info .details { display: flex; flex-direction: column; }
+        .file-info small { font-size: 12px; opacity: 0.8; }
+
+        .btn-delete {
+            background-color: #fff; border: 1px solid #ffcccc; color: #d32f2f;
+            padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+            transition: 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+        .btn-delete:hover { background-color: #ffebee; border-color: #d32f2f; }
+
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        input[type="file"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #f8f9fa; font-size: 16px; }
+        
+        .btn-submit { width: 100%; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; padding: 15px; border-radius: 50px; font-weight: bold; font-size: 18px; cursor: pointer; box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4); transition: 0.3s; margin-top: 10px; }
+        .btn-submit:hover { transform: scale(1.02); box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6); }
+
+        .btn-generate { 
+            width: 100%; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            color: white; border: none; padding: 18px; border-radius: 50px; 
+            font-weight: bold; font-size: 20px; cursor: pointer; 
+            box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4); transition: 0.3s; 
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-generate:hover { transform: scale(1.02); box-shadow: 0 6px 25px rgba(118, 75, 162, 0.6); }
+
+        .alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; animation: fadeIn 0.5s; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .alert-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* === VS CODE TERMINAL STYLE (Embedded) === */
+        #terminal-container {
+            /* ไม่ใช้ position: fixed แล้ว */
+            width: 100%; 
+            height: 300px;
+            background-color: #1e1e1e; 
+            color: #d4d4d4;
+            border-radius: 16px; /* ขอบมนเหมือนการ์ดอื่น */
+            font-family: 'Consolas', 'Courier New', monospace;
+            display: flex; flex-direction: column;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15); /* เงาเหมือนการ์ด */
+            overflow: hidden; /* เพื่อให้ขอบมนทำงาน */
+            margin-top: 30px; /* เว้นระยะห่างจากด้านบน */
+        }
+        #terminal-header {
+            background-color: #2d2d2d; padding: 10px 20px; font-size: 13px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid #333; text-transform: uppercase; letter-spacing: 1px;
+            font-weight: bold; color: #ccc;
+        }
+        #terminal-body {
+            flex-grow: 1; overflow-y: auto; padding: 20px; font-size: 14px; line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .log-entry { margin-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        .log-time { color: #569cd6; margin-right: 10px; font-size: 12px; }
+        .log-success { color: #4ec9b0; }
+        .log-error { color: #f44747; }
+        .log-info { color: #9cdcfe; }
+        .log-cmd { color: #ce9178; font-weight: bold; }
+        
+        /* Scrollbar */
+        #terminal-body::-webkit-scrollbar { width: 10px; }
+        #terminal-body::-webkit-scrollbar-track { background: #1e1e1e; }
+        #terminal-body::-webkit-scrollbar-thumb { background: #424242; border-radius: 5px; }
+        #terminal-body::-webkit-scrollbar-thumb:hover { background: #4f4f4f; }
+        
+        .term-btn {
+            background: none; border: 1px solid #555; color: #aaa;
+            padding: 4px 10px; font-size: 11px; cursor: pointer; border-radius: 4px;
+            transition: 0.2s;
+        }
+        .term-btn:hover { background: #444; color: white; border-color: #777; }
+    </style>
+</head>
+<body>
+
+    <header class="header-wrapper">
+        <div class="app-brand">
+            <span>⚙️ ระบบจัดการข้อมูล</span>
+        </div>
+        <div class="user-panel">
+            <span style="margin-right:15px">Admin: <strong><%= user.username %></strong></span>
+            <a href="/timetable">📅 กลับไปหน้าตารางสอน</a>
+        </div>
+    </header>
+
+    <div class="container">
+        
+        <% if (typeof status !== 'undefined') { %>
+            <% if (status === 'success') { %>
+                <div class="alert alert-success">✅ อัปโหลดไฟล์เสร็จสิ้น!</div>
+            <% } else if (status === 'gen_success') { %>
+                <div class="alert alert-info">✨ ประมวลผลตารางสอนเรียบร้อยแล้ว</div>
+            <% } else if (status === 'missing_files') { %>
+                <div class="alert alert-error">⛔ ข้อมูลไม่ครบ ขาดไฟล์: <%= filesList %></div>
+            <% } else if (status === 'deleted') { %>
+                <div class="alert alert-success">🗑️ ลบไฟล์เรียบร้อยแล้ว</div>
+            <% } else if (status === 'error') { %>
+                <div class="alert alert-error">❌ เกิดข้อผิดพลาด!</div>
+            <% } %>
+        <% } %>
+
+        <div class="menu-grid">
+            <a href="/timetable" class="menu-card">
+                <span class="menu-icon">📅</span>
+                <span class="menu-title">ดูตารางสอน</span>
+            </a>
+            <div class="menu-card" style="cursor: default; background: #f0f7ff; border-color: #2a5298;">
+                <span class="menu-icon">📂</span>
+                <span class="menu-title">จัดการข้อมูล (ปัจจุบัน)</span>
+            </div>
+            <a href="/logout" class="menu-card" style="border-color: #ffcccc;">
+                <span class="menu-icon">🚪</span>
+                <span class="menu-title" style="color: #d32f2f;">ออกจากระบบ</span>
+            </a>
+        </div>
+
+        <div class="section-card">
+            <h2>📊 สถานะไฟล์ข้อมูลในระบบ</h2>
+            <div class="file-status-grid">
+                <% 
+                    const requiredFiles = [
+                        { name: 'subject.csv', label: '📚 รายวิชา' },
+                        { name: 'teacher.csv', label: '👨‍🏫 ข้อมูลครู' },
+                        { name: 'room.csv', label: '🏫 ห้องเรียน' },
+                        { name: 'student_group.csv', label: '👥 กลุ่มเรียน' },
+                        { name: 'timeslot.csv', label: '⏰ คาบเรียน' },
+                        { name: 'teach.csv', label: '📋 ภาระงานสอน' },
+                        { name: 'register.csv', label: '📝 การลงทะเบียน' },
+                        { name: 'output.csv', label: '📅 ผลลัพธ์ (Output)' }
+                    ];
+                %>
+                <% requiredFiles.forEach(item => { 
+                    const isExist = (typeof files !== 'undefined' && files.includes(item.name));
+                %>
+                    <div class="file-card <%= isExist ? 'found' : 'missing' %>">
+                        <div class="file-info">
+                            <div class="icon"><%= isExist ? '✅' : '❌' %></div>
+                            <div class="details">
+                                <strong><%= item.label %></strong>
+                                <small><%= item.name %></small>
+                            </div>
+                        </div>
+                        <% if (isExist) { %>
+                            <form action="/admin/delete-file" method="POST" style="margin:0;">
+                                <input type="hidden" name="filename" value="<%= item.name %>">
+                                <button type="submit" class="btn-delete" title="ลบไฟล์นี้">🗑️ ลบ</button>
+                            </form>
+                        <% } %>
+                    </div>
+                <% }); %>
+            </div>
+
+            <% if (typeof files !== 'undefined') {
+                const otherFiles = files.filter(f => !requiredFiles.some(r => r.name === f) && f !== '.DS_Store');
+                if (otherFiles.length > 0) { %>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #ddd;">
+                    <strong style="color:#666;">ไฟล์อื่นๆ:</strong>
+                    <div class="file-status-grid" style="margin-top: 10px;">
+                        <% otherFiles.forEach(f => { %>
+                            <div class="file-card found">
+                                <div class="file-info"><div class="icon">📄</div><div class="details"><small><%= f %></small></div></div>
+                                <form action="/admin/delete-file" method="POST" style="margin:0;">
+                                    <input type="hidden" name="filename" value="<%= f %>">
+                                    <button type="submit" class="btn-delete">🗑️ ลบ</button>
+                                </form>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } } %>
+            <div class="section-card" style="background: #fff; margin-top: 25px; border-left: 5px solid <%= (stats.actual === stats.expected && stats.expected > 0) ? '#28a745' : '#ffc107' %>;">
+            <h2>📈 ความสมบูรณ์ของตารางสอน</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <p style="margin: 0; font-size: 14px; color: #666;">จำนวนคาบเรียนทั้งหมดที่ต้องจัด:</p>
+                    <span style="font-size: 24px; font-weight: bold; color: #1e3c72;"><%= stats.expected %> คาบ</span>
+                </div>
+                <div style="text-align: right;">
+                    <p style="margin: 0; font-size: 14px; color: #666;">จัดลงตารางได้จริง:</p>
+                    <span style="font-size: 24px; font-weight: bold; color: <%= stats.actual === stats.expected ? '#28a745' : '#d32f2f' %>;">
+                        <%= stats.actual %> คาบ
+                    </span>
+                </div>
+            </div>
+            
+            <% let percent = stats.expected > 0 ? (stats.actual / stats.expected) * 100 : 0; %>
+            <div style="width: 100%; background: #eee; height: 10px; border-radius: 5px; margin-top: 15px; overflow: hidden;">
+                <div style="width: <%= percent %>%; background: <%= percent === 100 ? '#28a745' : '#ffc107' %>; height: 100%; transition: 0.5s;"></div>
+            </div>
+
+            <% if (stats.actual < stats.expected && stats.expected > 0) { %>
+                <p style="color: #d32f2f; font-size: 13px; margin-top: 10px;">
+                    ⚠️ ตารางสอนยังไม่สมบูรณ์ ขาดอีก <strong><%= stats.expected - stats.actual %></strong> คาบ 
+                    (อาจเกิดจากครู/ห้อง ไม่ว่างในคาบที่กลุ่มเรียนนั้นว่าง)
+                </p>
+            <% } else if (stats.expected > 0) { %>
+                <p style="color: #28a745; font-size: 13px; margin-top: 10px;">✅ จัดตารางสอนครบถ้วนตามที่ลงทะเบียนเรียนทุกวิชาแล้ว</p>
+            <% } %>
+            <% if (stats.missingDetails && stats.missingDetails.length > 0) { %>
+            <div class="section-card" style="margin-top: -15px; border-top: none; border-radius: 0 0 16px 16px; background: #fffcf5;">
+                <h3 style="color: #856404; font-size: 16px; margin-bottom: 15px;">⚠️ รายการวิชาที่จัดลงตารางไม่ครบ:</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid #ffeeba; text-align: left;">
+                                <th style="padding: 10px;">กลุ่มเรียน</th>
+                                <th style="padding: 10px;">รหัสวิชา</th>
+                                <th style="padding: 10px;">ชื่อวิชา</th>
+                                <th style="padding: 10px; text-align: center;">ขาด (คาบ)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% stats.missingDetails.forEach(item => { %>
+                                <tr style="border-bottom: 1px solid #fdf2d2;">
+                                    <td style="padding: 10px;"><strong><%= item.group_id %></strong></td>
+                                    <td style="padding: 10px;"><code style="background: #eee; padding: 2px 5px; border-radius: 4px;"><%= item.subject_id %></code></td>
+                                    <td style="padding: 10px;"><%= item.subject_name %></td>
+                                    <td style="padding: 10px; text-align: center; color: #d32f2f; font-weight: bold;"><%= item.count %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="font-size: 12px; color: #996600; margin-top: 15px;">
+                    💡 <strong>คำแนะนำ:</strong> ลองตรวจสอบว่า "ครูที่สอนวิชานี้" หรือ "ห้องที่ต้องใช้" ถูกจองเต็มในคาบที่กลุ่มเรียนนี้ว่างหรือไม่
+                </p>
+            </div>
+        <% } %>
+        </div>
+        </div>
+
+        <div class="section-card" style="border: 2px solid #764ba2; background: #fcfaff;">
+            <h2 style="color: #764ba2; border-bottom-color: #e9dff5;">⚙️ ประมวลผลและจัดตารางสอน</h2>
+            <form action="/admin/generate-timetable" method="POST">
+                <button type="submit" class="btn-generate">✨ สร้างตารางสอนอัตโนมัติ</button>
+            </form>
+        </div>
+
+        <div class="section-card">
+            <h2>📂 อัปโหลดไฟล์ข้อมูล (Multiple Files)</h2>
+            <form action="/upload-csv" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>เลือกไฟล์ CSV ทั้งหมดจากเครื่อง:</label>
+                    <input type="file" name="csvFiles" accept=".csv" multiple required>
+                </div>
+                <button type="submit" class="btn-submit">🚀 ตรวจสอบและอัปโหลดทั้งหมด</button>
+            </form>
+        </div>
+
+        <div id="terminal-container">
+            <div id="terminal-header">
+                <span>TERMINAL / OUTPUT LOG</span>
+                <button class="term-btn" onclick="clearTerminal()">CLEAR LOGS</button>
+            </div>
+            <div id="terminal-body"></div>
+        </div>
+
+    </div>
+
+    <script>
+        const termBody = document.getElementById('terminal-body');
+        // 1. เมื่อหน้าเว็บโหลดเสร็จ ให้เลื่อนกลับไปตำแหน่งเดิม (ถ้ามีค่าบันทึกไว้)
+        document.addEventListener("DOMContentLoaded", function() {
+            const scrollPos = sessionStorage.getItem('scrollPos');
+            if (scrollPos) {
+                window.scrollTo(0, parseInt(scrollPos));
+                sessionStorage.removeItem('scrollPos'); // ลบค่าทิ้งเมื่อใช้เสร็จแล้ว
+            }
+        });
+
+        // 2. ดักจับการกดปุ่ม Submit ทุกปุ่มในหน้านี้ (ปุ่มลบ, ปุ่มสร้าง, ปุ่มอัปโหลด)
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            form.addEventListener('submit', function() {
+                // บันทึกตำแหน่ง Scroll ปัจจุบันลงใน Memory ของ Browser
+                sessionStorage.setItem('scrollPos', window.scrollY);
+            });
+        });
+        function getTime() {
+            const now = new Date();
+            return `[${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}]`;
+        }
+
+        function appendLog(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            let colorClass = 'log-info';
+            if (type === 'success') colorClass = 'log-success';
+            if (type === 'error') colorClass = 'log-error';
+            if (type === 'cmd') colorClass = 'log-cmd';
+
+            entry.innerHTML = `<span class="log-time">${getTime()}</span> <span class="${colorClass}">${message}</span>`;
+            termBody.appendChild(entry);
+            termBody.scrollTop = termBody.scrollHeight; 
+            saveLogs();
+        }
+
+        function saveLogs() {
+            localStorage.setItem('sysLogs', termBody.innerHTML);
+        }
+
+        function loadLogs() {
+            const logs = localStorage.getItem('sysLogs');
+            if (logs) {
+                termBody.innerHTML = logs;
+                termBody.scrollTop = termBody.scrollHeight;
+            } else {
+                appendLog('System ready. Terminal initialized...', 'info');
+            }
+        }
+
+        function clearTerminal() {
+            termBody.innerHTML = '';
+            localStorage.removeItem('sysLogs');
+            appendLog('Console cleared.', 'info');
+        }
+
+        loadLogs();
+
+        const status = "<%= typeof status !== 'undefined' ? status : '' %>";
+        
+        if (status === 'success') {
+            const count = "<%= typeof count !== 'undefined' ? count : 0 %>";
+            const files = "<%= typeof filesList !== 'undefined' ? filesList : '' %>";
+            appendLog(`Uploaded ${count} files successfully: ${files}`, 'success');
+        } 
+        else if (status === 'deleted') {
+            appendLog('File deleted successfully.', 'success');
+        }
+        else if (status === 'gen_success') {
+            appendLog('Scheduler Process Started...', 'cmd');
+            <% if (typeof serverLog !== 'undefined' && serverLog) { %>
+                const rawLog = `<%- JSON.stringify(serverLog) %>`;
+                const cleanLog = JSON.parse(rawLog).replace(/\n/g, '<br>');
+                appendLog(cleanLog, 'info');
+            <% } %>
+            appendLog('✨ Timetable generation completed successfully!', 'success');
+        }
+        else if (status === 'missing_files') {
+            const missing = "<%= typeof filesList !== 'undefined' ? filesList : '' %>";
+            appendLog(`Cannot generate timetable. Missing files: ${missing}`, 'error');
+        }
+        else if (status === 'error') {
+            const msg = "<%= typeof msg !== 'undefined' ? msg : '' %>";
+            appendLog(`Operation failed. ${msg}`, 'error');
+        }
+        else if (status === 'partial') {
+            const failCount = "<%= typeof failCount !== 'undefined' ? failCount : 0 %>";
+            appendLog(`Upload finished with warnings. ${failCount} files failed.`, 'error');
+        }
+
+    </script>
+</body>
+</html>

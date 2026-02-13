@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - ระบบตารางสอน</title>
+    <style>
+        @font-face {
+        font-family: 'PromptLight';
+        src: url('/Prompt-Light.ttf') format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    * {
+        font-family: 'PromptLight', 'Sarabun', sans-serif !important;
+    }
+        body { margin: 0; padding: 0; font-family: 'Segoe UI', 'Sarabun', sans-serif; height: 100vh; display: flex; justify-content: center; align-items: center; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); overflow: hidden; position: relative; }
+        .circle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(5px); z-index: 0; animation: float 10s infinite ease-in-out; }
+        .c1 { width: 300px; height: 300px; top: -50px; left: -50px; animation-duration: 12s; }
+        .c2 { width: 200px; height: 200px; bottom: 50px; right: -50px; animation-duration: 15s; }
+        @keyframes float { 0% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(10deg); } 100% { transform: translateY(0) rotate(0deg); } }
+        
+        .login-card { background: rgba(255, 255, 255, 0.95); padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 400px; position: relative; z-index: 10; text-align: center; animation: slideUp 0.8s; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(50px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .brand-icon { font-size: 50px; background: linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%); width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; border-radius: 50%; margin: 0 auto 15px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { margin: 0; color: #1e3c72; font-size: 24px; font-weight: 700; }
+        p.subtitle { margin: 5px 0 20px 0; color: #666; font-size: 14px; }
+
+        /* --- Tabs --- */
+        .tabs { display: flex; background: #f0f0f0; border-radius: 50px; padding: 5px; margin-bottom: 25px; }
+        .tab-btn { flex: 1; border: none; background: transparent; padding: 10px; border-radius: 50px; cursor: pointer; font-weight: 600; color: #666; transition: all 0.3s; font-size: 14px; }
+        .tab-btn.active { background: white; color: #1e3c72; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+
+        /* Forms */
+        .form-section { display: none; }
+        .form-section.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 5px; display: block; margin-left: 15px; }
+        
+        input[type="text"], input[type="password"], select { 
+            width: 100%; padding: 12px 20px; border: 2px solid #eee; border-radius: 50px; 
+            font-size: 14px; outline: none; box-sizing: border-box; transition: all 0.3s; background-color: #f9f9f9; 
+        }
+        select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='gray' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e"); background-repeat: no-repeat; background-position: right 15px center; background-size: 15px; }
+        input:focus, select:focus { border-color: #4a90e2; background-color: #fff; box-shadow: 0 0 0 4px rgba(74, 144, 226, 0.1); }
+
+        .btn-login { width: 100%; padding: 12px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; border: none; border-radius: 50px; font-size: 16px; font-weight: bold; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; margin-top: 10px; box-shadow: 0 4px 15px rgba(30, 60, 114, 0.3); }
+        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(30, 60, 114, 0.4); }
+        .error-msg { background-color: #ffebee; color: #c62828; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; border: 1px solid #ffcdd2; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="circle c1"></div>
+    <div class="circle c2"></div>
+
+    <div class="login-card">
+        <div class="brand-icon">📅</div>
+        <h2>ยินดีต้อนรับ</h2>
+        <p class="subtitle">เลือกสถานะเพื่อเข้าใช้งาน</p>
+
+        <script>
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            if(errorMsg) document.write(`<div class="error-msg">⚠️ ${errorMsg}</div>`);
+        </script>
+
+        <div class="tabs">
+            <button class="tab-btn" onclick="switchTab('student')">👨‍🎓 นักเรียน</button>
+            <button class="tab-btn" onclick="switchTab('teacher')">👩‍🏫 ครู</button>
+            <button class="tab-btn active" onclick="switchTab('admin')">🔧 Admin</button>
+        </div>
+
+        <form action="/login" method="POST" id="form-admin" class="form-section active">
+            <input type="hidden" name="loginType" value="admin">
+            <div class="input-group">
+                <label>ชื่อผู้ใช้งาน (Admin)</label>
+                <input type="text" name="username" placeholder="Username" value="admin">
+            </div>
+            <div class="input-group">
+                <label>รหัสผ่าน</label>
+                <input type="password" name="password" placeholder="Password" value="1234">
+            </div>
+            <button type="submit" class="btn-login">เข้าสู่ระบบ Admin</button>
+        </form>
+
+        <form action="/login" method="POST" id="form-teacher" class="form-section">
+            <input type="hidden" name="loginType" value="teacher">
+            <input type="hidden" name="teacherName" id="teacherNameInput">
+            <div class="input-group">
+                <label>เลือกชื่อครูผู้สอน</label>
+                <select name="teacherId" onchange="document.getElementById('teacherNameInput').value = this.options[this.selectedIndex].text">
+                    <option value="" disabled selected>-- กรุณาเลือกรายชื่อ --</option>
+                    <% if (teachers && teachers.length > 0) { %>
+                        <% teachers.forEach(t => { %>
+                            <option value="<%= t.teacher_id %>"><%= t.teacher_name %></option>
+                        <% }) %>
+                    <% } else { %>
+                        <option value="">ไม่พบข้อมูล (ต้องให้ Admin อัปโหลดไฟล์)</option>
+                    <% } %>
+                </select>
+            </div>
+            <button type="submit" class="btn-login" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);">ดูตารางสอนครู</button>
+        </form>
+
+        <form action="/login" method="POST" id="form-student" class="form-section">
+            <input type="hidden" name="loginType" value="student">
+            <input type="hidden" name="groupName" id="groupNameInput">
+            <div class="input-group">
+                <label>เลือกกลุ่มเรียน (ห้อง)</label>
+                <select name="groupId" onchange="document.getElementById('groupNameInput').value = this.options[this.selectedIndex].text">
+                    <option value="" disabled selected>-- กรุณาเลือกห้องเรียน --</option>
+                    <% if (groups && groups.length > 0) { %>
+                        <% groups.forEach(g => { %>
+                            <option value="<%= g.group_id %>"><%= g.group_name %></option>
+                        <% }) %>
+                    <% } else { %>
+                        <option value="">ไม่พบข้อมูล (ต้องให้ Admin อัปโหลดไฟล์)</option>
+                    <% } %>
+                </select>
+            </div>
+            <button type="submit" class="btn-login" style="background: linear-gradient(135deg, #FF8008 0%, #FFC837 100%); box-shadow: 0 4px 15px rgba(255, 200, 55, 0.4);">ดูตารางเรียน</button>
+        </form>
+
+        <div style="margin-top: 25px; font-size: 12px; color: #aaa;">&copy; School Timetable System</div>
+    </div>
+
+    <script>
+        function switchTab(type) {
+            // Update Tab Buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Hide all forms
+            document.querySelectorAll('.form-section').forEach(form => form.classList.remove('active'));
+
+            // Show selected form
+            document.getElementById(`form-${type}`).classList.add('active');
+        }
+    </script>
+</body>
+</html>
